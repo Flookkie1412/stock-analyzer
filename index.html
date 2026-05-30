@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock AI Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#f0f0f5;--muted:#8888a0;--faint:#444455;
+  --green:#22d98a;--green-bg:rgba(34,217,138,0.1);--green-dim:#16a866;
+  --blue:#5b9fff;--blue-bg:rgba(91,159,255,0.1);
+  --amber:#f9a825;--amber-bg:rgba(249,168,37,0.1);
+  --red:#ff5c5c;--red-bg:rgba(255,92,92,0.1);
+  --accent:#7c6dfa;--accent-bg:rgba(124,109,250,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;}
+body::before{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,rgba(124,109,250,0.12) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2.5rem;border-bottom:0.5px solid var(--border);background:rgba(10,10,15,0.9);backdrop-filter:blur(12px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{width:34px;height:34px;background:var(--accent-bg);border:0.5px solid rgba(124,109,250,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.brand-name{font-family:'DM Serif Display',serif;font-size:18px;}
+.brand-name span{color:var(--accent);}
+.header-tag{font-size:12px;padding:4px 12px;border-radius:20px;background:var(--green-bg);color:var(--green);border:0.5px solid rgba(34,217,138,0.2);}
+
+/* API KEY BANNER */
+.api-banner{position:relative;z-index:1;background:rgba(124,109,250,0.07);border-bottom:0.5px solid rgba(124,109,250,0.2);padding:10px 2.5rem;}
+.api-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.api-label{font-size:12px;color:var(--muted);white-space:nowrap;}
+.api-input-wrap{flex:1;min-width:200px;position:relative;display:flex;align-items:center;}
+.api-input-wrap input{width:100%;height:34px;padding:0 36px 0 12px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.api-input-wrap input:focus{border-color:var(--accent);}
+.api-input-wrap input::placeholder{color:var(--faint);}
+.toggle-eye{position:absolute;right:10px;cursor:pointer;color:var(--faint);font-size:14px;user-select:none;}
+.toggle-eye:hover{color:var(--muted);}
+.api-status{font-size:12px;white-space:nowrap;padding:4px 10px;border-radius:20px;}
+.api-status.ok{background:var(--green-bg);color:var(--green);}
+.api-status.empty{background:rgba(255,92,92,0.1);color:var(--red);}
+.api-hint{font-size:11px;color:var(--faint);}
+.api-hint a{color:var(--accent);text-decoration:none;}
+.api-hint a:hover{text-decoration:underline;}
+
+.hero{position:relative;z-index:1;padding:3.5rem 2.5rem 2.5rem;max-width:900px;margin:0 auto;text-align:center;}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(1.8rem,5vw,3rem);line-height:1.15;margin-bottom:.8rem;background:linear-gradient(135deg,#f0f0f5 0%,#8888a0 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{font-size:14px;color:var(--muted);margin-bottom:1.8rem;}
+.search-wrap{display:flex;gap:10px;max-width:600px;margin:0 auto 1.2rem;}
+.search-wrap input{flex:1;height:48px;padding:0 16px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--faint);}
+.btn-analyze{height:48px;padding:0 22px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .2s,transform .1s;white-space:nowrap;}
+.btn-analyze:hover{opacity:.88;}
+.btn-analyze:active{transform:scale(.97);}
+.btn-analyze:disabled{opacity:.4;cursor:not-allowed;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+.chip{font-size:12px;padding:5px 13px;border-radius:20px;border:0.5px solid var(--border2);color:var(--muted);cursor:pointer;background:var(--surface);transition:all .15s;}
+.chip:hover{border-color:var(--accent);color:var(--text);background:var(--accent-bg);}
+
+main{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:0 2.5rem 4rem;}
+.empty-state{text-align:center;padding:4rem 0;color:var(--faint);font-size:14px;}
+.empty-icon{font-size:38px;margin-bottom:1rem;}
+.loading-state{text-align:center;padding:4rem 0;}
+.loading-ring{width:38px;height:38px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-state p{color:var(--muted);font-size:14px;}
+.result{animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+.result-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:0.5px solid var(--border);}
+.ticker-logo{width:56px;height:56px;border-radius:14px;background:var(--accent-bg);border:0.5px solid rgba(124,109,250,0.3);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:15px;color:var(--accent);flex-shrink:0;}
+.rht h2{font-family:'DM Serif Display',serif;font-size:21px;color:var(--text);margin-bottom:4px;}
+.rht .sector{font-size:13px;color:var(--muted);margin-bottom:8px;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{font-size:11px;padding:3px 10px;border-radius:20px;}
+.price-row{margin-left:auto;text-align:right;flex-shrink:0;}
+.price-main{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);}
+.price-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+.sec{margin-bottom:1.8rem;}
+.sec-title{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;}
+.mc{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;}
+.mc .lb{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.mc .vl{font-size:18px;font-weight:500;color:var(--text);}
+.mc .sb{font-size:11px;color:var(--faint);margin-top:3px;}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem;}
+.card p{font-size:13px;color:var(--muted);line-height:1.8;}
+.fv-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.fvc{border-radius:var(--radius-sm);padding:14px;text-align:center;}
+.fvc .fl{font-size:11px;margin-bottom:5px;}
+.fvc .fv{font-size:21px;font-weight:500;}
+.fvc .fs{font-size:11px;margin-top:4px;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.bar-lbl{font-size:12px;color:var(--muted);width:130px;flex-shrink:0;}
+.bar-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+.bar-val{font-size:12px;font-weight:500;width:26px;text-align:right;color:var(--text);}
+.risk-item{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:0.5px solid var(--border);}
+.risk-item:last-child{border-bottom:none;}
+.rdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.risk-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.risk-desc{font-size:12px;color:var(--muted);line-height:1.7;}
+.risk-badge{font-size:11px;padding:3px 10px;border-radius:20px;flex-shrink:0;margin-left:auto;}
+.grow-item{display:flex;gap:12px;padding:9px 0;border-bottom:0.5px solid var(--border);}
+.grow-item:last-child{border-bottom:none;}
+.grow-num{font-size:12px;font-weight:600;color:var(--accent);min-width:22px;margin-top:2px;}
+.grow-text{font-size:13px;color:var(--muted);line-height:1.7;}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;}
+.comp-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:13px;}
+.comp-card.highlight{border-color:rgba(124,109,250,0.4);background:var(--accent-bg);}
+.comp-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:7px;}
+.comp-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;}
+.comp-row span:last-child{color:var(--text);}
+.comp-str{font-size:11px;color:var(--faint);margin-top:7px;line-height:1.5;}
+.idea-chip{display:inline-block;font-size:12px;padding:4px 11px;border-radius:20px;margin:3px 4px 3px 0;background:var(--amber-bg);color:var(--amber);border:0.5px solid rgba(249,168,37,0.2);}
+.verdict{border-left:3px solid var(--green);padding:14px 18px;background:var(--green-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:1rem;}
+.verdict-label{font-size:11px;color:var(--green);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.verdict p{font-size:13px;color:var(--text);line-height:1.8;}
+.disclaimer{font-size:11px;color:var(--faint);border-top:0.5px solid var(--border);padding-top:12px;margin-top:1.5rem;line-height:1.7;}
+.error-state{background:var(--red-bg);border:0.5px solid rgba(255,92,92,0.2);border-radius:var(--radius);padding:1.5rem;color:var(--red);font-size:13px;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">📈</div>
+    <div class="brand-name">Stock<span>AI</span></div>
+  </div>
+  <div class="header-tag">Powered by Claude</div>
+</header>
+
+<div class="api-banner">
+  <div class="api-inner">
+    <span class="api-label">🔑 Anthropic API Key:</span>
+    <div class="api-input-wrap">
+      <input type="password" id="apikey" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <span class="toggle-eye" onclick="toggleKey()">👁</span>
+    </div>
+    <span class="api-status empty" id="api-status">ยังไม่ได้ใส่</span>
+    <span class="api-hint">สมัครฟรีที่ <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></span>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>วิเคราะห์หุ้นเชิงลึก<br>ด้วย AI</h1>
+  <p>มูลค่าพื้นฐาน · Moat · ความเสี่ยง · คู่แข่ง · การเติบโต</p>
+  <div class="search-wrap">
+    <input id="inp" type="text" placeholder="กรอกชื่อหุ้น เช่น NVDA, AAPL, PTT..." />
+    <button class="btn-analyze" id="gobtn">✦ วิเคราะห์</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<main>
+  <div id="out">
+    <div class="empty-state">
+      <div class="empty-icon">◎</div>
+      <p>ใส่ API Key และกรอกชื่อหุ้นด้านบนเพื่อเริ่มวิเคราะห์</p>
+    </div>
+  </div>
+</main>
+
+<script>
+var TICKERS=['NVDA','AAPL','MSFT','TSLA','GOOGL','META','AMZN','CPALL','PTT','ADVANC'];
+var chipsEl=document.getElementById('chips');
+TICKERS.forEach(function(t){
+  var s=document.createElement('span');
+  s.className='chip'; s.textContent=t;
+  s.onclick=function(){document.getElementById('inp').value=t;go();};
+  chipsEl.appendChild(s);
+});
+
+// API Key handling
+var apikeyInput=document.getElementById('apikey');
+var savedKey=localStorage.getItem('stock_ai_key')||'';
+if(savedKey){apikeyInput.value=savedKey;updateStatus(true);}
+apikeyInput.oninput=function(){
+  var v=this.value.trim();
+  localStorage.setItem('stock_ai_key',v);
+  updateStatus(v.length>10);
+};
+function updateStatus(ok){
+  var s=document.getElementById('api-status');
+  s.textContent=ok?'✓ พร้อมใช้งาน':'ยังไม่ได้ใส่';
+  s.className='api-status '+(ok?'ok':'empty');
+}
+function toggleKey(){
+  apikeyInput.type=apikeyInput.type==='password'?'text':'password';
+}
+
+document.getElementById('gobtn').onclick=go;
+document.getElementById('inp').onkeydown=function(e){if(e.key==='Enter')go();};
+
+function bc(v){return v>=80?'#22d98a':v>=60?'#5b9fff':v>=40?'#f9a825':'#ff5c5c';}
+function rcol(l){return l==='high'?'#ff5c5c':l==='medium'?'#f9a825':'#22d98a';}
+function rbg(l){return l==='high'?'rgba(255,92,92,0.12)':l==='medium'?'rgba(249,168,37,0.12)':'rgba(34,217,138,0.12)';}
+function rlabel(l){return l==='high'?'ความเสี่ยงสูง':l==='medium'?'ปานกลาง':'ต่ำ';}
+
+async function go(){
+  var key=document.getElementById('apikey').value.trim();
+  var ticker=document.getElementById('inp').value.trim().toUpperCase();
+  if(!ticker)return;
+  if(!key||key.length<20){
+    document.getElementById('out').innerHTML='<div class="error-state">⚠ กรุณาใส่ Anthropic API Key ในช่องด้านบนก่อนครับ<br><small style="opacity:.7;margin-top:6px;display:block;">สมัครฟรีได้ที่ console.anthropic.com → API Keys → Create Key</small></div>';
+    return;
+  }
+
+  var btn=document.getElementById('gobtn');
+  var out=document.getElementById('out');
+  btn.disabled=true; btn.textContent='⏳ กำลังวิเคราะห์...';
+  out.innerHTML='<div class="loading-state"><div class="loading-ring"></div><p>กำลังวิเคราะห์ '+ticker+'...</p></div>';
+
+  var prompt='วิเคราะห์หุ้น "'+ticker+'" ตอบเป็น JSON เท่านั้น ห้ามมี markdown, backtick หรือข้อความนอก JSON โครงสร้าง: {"ticker":"","companyName":"","sector":"","currentPrice":"ราคาปัจจุบัน","summary":"สรุปบริษัท 2-3 ประโยค","trends":["","",""],"fairValue":{"low":"","base":"","high":"","method":""},"financials":{"peRatio":"","revenue":"","revenueGrowth":"","netMargin":"","debtToEquity":"","roe":"","pegRatio":""},"quality":{"overall":0,"moat":0,"management":0,"financial":0,"growth":0},"moatAnalysis":"อธิบาย moat 3-4 ประโยค","moatType":["","",""],"risks":[{"level":"high","title":"","detail":""},{"level":"medium","title":"","detail":""},{"level":"low","title":"","detail":""}],"growthDrivers":["","","",""],"competitors":[{"name":"","ticker":"","peRatio":"","marketShare":"","strength":""},{"name":"","ticker":"","peRatio":"","marketShare":"","strength":""},{"name":"","ticker":"","peRatio":"","marketShare":"","strength":""}],"whyInvest":"3-4 ประโยค","investIdeas":["","",""],"verdict":"สรุป 2-3 ประโยค"} quality ทุกตัวเป็น integer 0-100';
+
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){
+      var err=await res.json().catch(function(){return{};});
+      throw new Error((err.error&&err.error.message)||'HTTP '+res.status);
+    }
+    var data=await res.json();
+    var text=data.content.map(function(i){return i.text||'';}).join('');
+    var m=text.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('ไม่พบข้อมูล JSON');
+    var d=JSON.parse(m[0]);
+    render(d);
+  }catch(e){
+    out.innerHTML='<div class="error-state">⚠ เกิดข้อผิดพลาด: '+e.message+'<br><small style="opacity:.7;margin-top:6px;display:block;">ตรวจสอบ API Key ว่าถูกต้องและมี Credit เพียงพอครับ</small></div>';
+  }
+  btn.disabled=false; btn.textContent='✦ วิเคราะห์';
+}
+
+function render(d){
+  var out=document.getElementById('out');
+  var init=(d.ticker||'??').substring(0,4);
+  var h='<div class="result">';
+
+  h+='<div class="result-header">';
+  h+='<div class="ticker-logo">'+init+'</div>';
+  h+='<div class="rht"><h2>'+(d.companyName||d.ticker)+' <span style="font-size:13px;color:var(--muted);font-family:DM Sans,sans-serif;">('+d.ticker+')</span></h2>';
+  h+='<div class="sector">'+(d.sector||'')+'</div>';
+  if(d.trends&&d.trends.length){
+    h+='<div class="tags">';
+    d.trends.forEach(function(t){h+='<span class="tag" style="background:var(--accent-bg);color:var(--accent);border:0.5px solid rgba(124,109,250,0.2);">'+t+'</span>';});
+    h+='</div>';
+  }
+  h+='</div>';
+  if(d.currentPrice){h+='<div class="price-row"><div class="price-main">'+d.currentPrice+'</div><div class="price-sub">ราคาปัจจุบัน</div></div>';}
+  h+='</div>';
+
+  h+='<div class="sec"><div class="sec-title">สรุปบริษัท</div><div class="card"><p>'+(d.summary||'')+'</p></div></div>';
+
+  if(d.fairValue){
+    h+='<div class="sec"><div class="sec-title">มูลค่าพื้นฐาน (Fair Value)</div>';
+    h+='<div class="fv-grid">';
+    h+='<div class="fvc" style="background:rgba(249,168,37,0.08);border:0.5px solid rgba(249,168,37,0.2);"><div class="fl" style="color:var(--amber);">Conservative</div><div class="fv" style="color:#f9a825;">'+(d.fairValue.low||'-')+'</div><div class="fs" style="color:var(--amber);">ต่ำสุด</div></div>';
+    h+='<div class="fvc" style="background:rgba(34,217,138,0.08);border:0.5px solid rgba(34,217,138,0.2);"><div class="fl" style="color:var(--green);">Base Case</div><div class="fv" style="color:#22d98a;">'+(d.fairValue.base||'-')+'</div><div class="fs" style="color:var(--green);">ราคาพื้นฐาน</div></div>';
+    h+='<div class="fvc" style="background:rgba(91,159,255,0.08);border:0.5px solid rgba(91,159,255,0.2);"><div class="fl" style="color:var(--blue);">Optimistic</div><div class="fv" style="color:#5b9fff;">'+(d.fairValue.high||'-')+'</div><div class="fs" style="color:var(--blue);">สูงสุด</div></div>';
+    h+='</div>';
+    if(d.fairValue.method){h+='<div class="card" style="margin-top:8px;"><p>📐 วิธีประเมิน: '+d.fairValue.method+'</p></div>';}
+    h+='</div>';
+  }
+
+  if(d.financials){
+    h+='<div class="sec"><div class="sec-title">ข้อมูลทางการเงิน</div><div class="metrics">';
+    [['P/E Ratio',d.financials.peRatio,''],['รายได้',d.financials.revenue,d.financials.revenueGrowth],['Net Margin',d.financials.netMargin,''],['D/E Ratio',d.financials.debtToEquity,''],['ROE',d.financials.roe,''],['PEG Ratio',d.financials.pegRatio,'<1 = น่าสนใจ']].forEach(function(f){
+      if(f[1]){h+='<div class="mc"><div class="lb">'+f[0]+'</div><div class="vl">'+f[1]+'</div>'+(f[2]?'<div class="sb">'+f[2]+'</div>':'')+'</div>';}
+    });
+    h+='</div></div>';
+  }
+
+  if(d.quality){
+    h+='<div class="sec"><div class="sec-title">คุณภาพบริษัท (สกอร์ 0–100)</div><div class="card">';
+    [['คะแนนรวม',d.quality.overall],['Economic Moat',d.quality.moat],['ทีมบริหาร',d.quality.management],['สุขภาพการเงิน',d.quality.financial],['ศักยภาพการเติบโต',d.quality.growth]].forEach(function(q){
+      var v=parseInt(q[1])||0;
+      h+='<div class="bar-row"><span class="bar-lbl">'+q[0]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+v+'%;background:'+bc(v)+';"></div></div><span class="bar-val">'+v+'</span></div>';
+    });
+    h+='</div></div>';
+  }
+
+  if(d.moatAnalysis){
+    h+='<div class="sec"><div class="sec-title">วิเคราะห์ Economic Moat</div><div class="card">';
+    if(d.moatType&&d.moatType.length){
+      h+='<div style="margin-bottom:10px;">';
+      d.moatType.forEach(function(m){h+='<span class="tag" style="background:rgba(34,217,138,0.1);color:var(--green);border:0.5px solid rgba(34,217,138,0.2);margin-right:5px;">✓ '+m+'</span>';});
+      h+='</div>';
+    }
+    h+='<p>'+d.moatAnalysis+'</p></div></div>';
+  }
+
+  if(d.risks&&d.risks.length){
+    h+='<div class="sec"><div class="sec-title">ความเสี่ยง</div><div class="card">';
+    d.risks.forEach(function(r){
+      h+='<div class="risk-item"><div class="rdot" style="background:'+rcol(r.level)+';"></div>';
+      h+='<div style="flex:1;"><div class="risk-title">'+r.title+'</div><div class="risk-desc">'+r.detail+'</div></div>';
+      h+='<div class="risk-badge" style="background:'+rbg(r.level)+';color:'+rcol(r.level)+';">'+rlabel(r.level)+'</div></div>';
+    });
+    h+='</div></div>';
+  }
+
+  if(d.growthDrivers&&d.growthDrivers.length){
+    h+='<div class="sec"><div class="sec-title">ปัจจัยขับเคลื่อนการเติบโต</div><div class="card">';
+    d.growthDrivers.forEach(function(g,i){h+='<div class="grow-item"><span class="grow-num">0'+(i+1)+'</span><p class="grow-text">'+g+'</p></div>';});
+    h+='</div></div>';
+  }
+
+  if(d.competitors&&d.competitors.length){
+    h+='<div class="sec"><div class="sec-title">เปรียบเทียบคู่แข่ง</div><div class="comp-grid">';
+    d.competitors.forEach(function(c,i){
+      h+='<div class="comp-card'+(i===0?' highlight':'')+'">';
+      if(i===0)h+='<div style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:6px;">กำลังวิเคราะห์</div>';
+      h+='<div class="comp-name">'+c.name+' <span style="font-size:11px;color:var(--muted);">'+c.ticker+'</span></div>';
+      if(c.peRatio){h+='<div class="comp-row"><span>P/E</span><span>'+c.peRatio+'</span></div>';}
+      if(c.marketShare){h+='<div class="comp-row"><span>Market Share</span><span>'+c.marketShare+'</span></div>';}
+      h+='<div class="comp-str">'+c.strength+'</div></div>';
+    });
+    h+='</div></div>';
+  }
+
+  if(d.whyInvest||(d.investIdeas&&d.investIdeas.length)){
+    h+='<div class="sec"><div class="sec-title">ทำไมถึงน่าลงทุน & ไอเดีย</div><div class="card">';
+    if(d.whyInvest)h+='<p style="margin-bottom:12px;">'+d.whyInvest+'</p>';
+    if(d.investIdeas&&d.investIdeas.length){d.investIdeas.forEach(function(idea){h+='<span class="idea-chip">💡 '+idea+'</span>';});}
+    h+='</div></div>';
+  }
+
+  if(d.verdict){h+='<div class="verdict"><div class="verdict-label">✦ สรุปการวิเคราะห์</div><p>'+d.verdict+'</p></div>';}
+
+  h+='<p class="disclaimer">⚠️ ข้อมูลสร้างโดย AI เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน ควรศึกษาเพิ่มเติมและปรึกษาผู้เชี่ยวชาญก่อนตัดสินใจ</p>';
+  h+='</div>';
+  out.innerHTML=h;
+}
+</script>
+</body>
+</html>
